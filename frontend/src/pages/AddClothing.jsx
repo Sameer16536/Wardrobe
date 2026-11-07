@@ -562,25 +562,24 @@ export default function AddClothing() {
                 </button>
               </>
             )}
-          </div>
 
-                {/* Hidden native inputs */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={handleFileUpload}
-                />
-                <input
-                  ref={nativeCameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  style={{ display: "none" }}
-                  onChange={handleFileUpload}
-                />
-              </div>
+            {/* Hidden native inputs */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={handleFileUpload}
+            />
+            <input
+              ref={nativeCameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: "none" }}
+              onChange={handleFileUpload}
+            />
+          </div>
 
               <div style={{ textAlign: "center" }}>
                 <p style={{ margin: 0, fontSize: "12px", color: "#6A707E" }}>

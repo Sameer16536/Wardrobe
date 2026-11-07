@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Search, RefreshCw, Trash2, Camera, X, Tag } from "lucide-react";
+import { Plus, Search, RefreshCw, Trash2, Camera, X, Tag, Upload } from "lucide-react";
 import { clothesApi } from "../api/client";
 import { useWardrobeStore } from "../store/store";
 import { useNavigate } from "react-router-dom";
@@ -403,9 +403,14 @@ export default function Wardrobe() {
                 : "Try resetting your search or category filter."}
             </p>
             {items.length === 0 && (
-              <button className="btn-primary" onClick={() => navigate("/add")} style={{ width: "100%", maxWidth: "240px" }}>
-                <Camera size={16} /> Snap First Garment
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "240px", margin: "0 auto" }}>
+                <button className="btn-primary" onClick={() => navigate("/add")} style={{ width: "100%" }}>
+                  <Camera size={16} /> Snap First Garment
+                </button>
+                <button className="btn-secondary" onClick={() => navigate("/add")} style={{ width: "100%" }}>
+                  <Upload size={16} /> Upload from Gallery
+                </button>
+              </div>
             )}
           </motion.div>
         ) : (
