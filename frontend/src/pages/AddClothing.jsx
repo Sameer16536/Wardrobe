@@ -32,6 +32,7 @@ export default function AddClothing() {
   const nativeCameraInputRef = useRef(null);
 
   const [step, setStep] = useState("capture"); // capture | preview | edit | saving
+  const [captureMode, setCaptureMode] = useState("camera"); // camera | gallery
   const [capturedImage, setCapturedImage] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -47,13 +48,17 @@ export default function AddClothing() {
     notes: "",
   });
 
-  // Automatically start camera on mount if supported
+  // Manage camera lifecycle based on mode and facing orientation
   useEffect(() => {
-    startCamera();
+    if (captureMode === "camera") {
+      startCamera();
+    } else {
+      stopCamera();
+    }
     return () => {
       stopCamera();
     };
-  }, [facingMode]);
+  }, [facingMode, captureMode]);
 
   const startCamera = async () => {
     try {
@@ -206,122 +211,235 @@ export default function AddClothing() {
 
       <div style={{ maxWidth: "480px", margin: "0 auto", padding: "16px" }}>
         <AnimatePresence mode="wait">
-          {/* ─── STEP 1: CAPTURE ──────────────────────────────────────────── */}
+          {/* ─── STEP 1: CAPTURE / UPLOAD ─────────────────────────────────── */}
           {step === "capture" && (
             <motion.div
               key="capture"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+              style={{ display: "flex", flexDirection: "column", gap: "14px" }}
             >
-              {/* Viewfinder Window */}
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  aspectRatio: "3/4",
-                  borderRadius: "20px",
-                  overflow: "hidden",
-                  backgroundColor: "#131417",
-                  border: "1px solid #23262D",
-                  boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
-                }}
-              >
-                <video
-                  ref={videoRef}
-                  playsInline
-                  muted
-                  autoPlay
+              {/* Mode Toggle: Camera vs Gallery */}
+              <div style={{
+                display: "flex",
+                gap: "4px",
+                padding: "4px",
+                borderRadius: "12px",
+                backgroundColor: "#141518",
+                border: "1px solid #20232B",
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setCaptureMode("camera")}
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: cameraActive ? "block" : "none",
+                    flex: 1,
+                    minHeight: "36px",
+                    borderRadius: "8px",
+                    border: captureMode === "camera" ? "1px solid #2F333E" : "1px solid transparent",
+                    backgroundColor: captureMode === "camera" ? "#1F222A" : "transparent",
+                    color: captureMode === "camera" ? "#F4F5F7" : "#747A87",
+                    fontSize: "12.5px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    cursor: "pointer",
+                    transition: "all 0.12s ease",
                   }}
-                />
+                >
+                  <Camera size={14} /> Live Camera
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCaptureMode("gallery")}
+                  style={{
+                    flex: 1,
+                    minHeight: "36px",
+                    borderRadius: "8px",
+                    border: captureMode === "gallery" ? "1px solid #2F333E" : "1px solid transparent",
+                    backgroundColor: captureMode === "gallery" ? "#1F222A" : "transparent",
+                    color: captureMode === "gallery" ? "#F4F5F7" : "#747A87",
+                    fontSize: "12.5px",
+                    fontWeight: "600",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    cursor: "pointer",
+                    transition: "all 0.12s ease",
+                  }}
+                >
+                  <Upload size={14} /> Photo Gallery
+                </button>
+              </div>
 
-                {!cameraActive && (
-                  <div style={{
+              {/* GALLERY DROPZONE VIEW */}
+              {captureMode === "gallery" ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files?.length) {
+                      handleFileUpload({ target: { files: e.dataTransfer.files } });
+                    }
+                  }}
+                  style={{
+                    position: "relative",
                     width: "100%",
-                    height: "100%",
+                    aspectRatio: "3/4",
+                    borderRadius: "20px",
+                    backgroundColor: "#131417",
+                    border: "2px dashed #2A2E38",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: "12px",
                     padding: "24px",
                     textAlign: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+                  }}
+                >
+                  <div style={{
+                    width: "64px",
+                    height: "64px",
+                    borderRadius: "18px",
+                    backgroundColor: "#1C1E24",
+                    border: "1px solid #282C36",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#F2EEE9",
+                    marginBottom: "16px",
                   }}>
-                    <div style={{
-                      width: "64px",
-                      height: "64px",
-                      borderRadius: "16px",
-                      backgroundColor: "#181A20",
-                      border: "1px solid #282C35",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#A0A5B1",
-                    }}>
-                      <Camera size={28} />
-                    </div>
-                    <div>
-                      <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "600", color: "#F4F5F7" }}>
-                        Camera Standby
-                      </p>
-                      <p style={{ margin: 0, fontSize: "12px", color: "#747A87" }}>
-                        Use live viewfinder or launch your phone's native camera
-                      </p>
-                    </div>
-                    <button
-                      onClick={startCamera}
-                      className="btn-secondary"
-                      style={{ marginTop: "8px", fontSize: "13px" }}
-                    >
-                      Enable Live Viewfinder
-                    </button>
+                    <Upload size={28} strokeWidth={1.8} />
                   </div>
-                )}
-
-                {/* Flip camera overlay button */}
-                {cameraActive && (
+                  <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: "600", color: "#F4F5F7" }}>
+                    Select from Gallery
+                  </h3>
+                  <p style={{ margin: "0 0 18px 0", fontSize: "13px", color: "#8E94A0", maxWidth: "260px", lineHeight: 1.45 }}>
+                    Tap to choose clothes from your photo library or drag & drop image files
+                  </p>
                   <button
-                    onClick={flipCamera}
+                    type="button"
+                    className="btn-primary"
+                    style={{ minHeight: "42px", padding: "8px 24px", fontSize: "13px", pointerEvents: "none" }}
+                  >
+                    Browse Gallery
+                  </button>
+                </div>
+              ) : (
+                /* LIVE CAMERA VIEWFINDER */
+                <div
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    aspectRatio: "3/4",
+                    borderRadius: "20px",
+                    overflow: "hidden",
+                    backgroundColor: "#131417",
+                    border: "1px solid #23262D",
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+                  }}
+                >
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    autoPlay
                     style={{
-                      position: "absolute",
-                      top: "14px",
-                      right: "14px",
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      backgroundColor: "rgba(12, 13, 14, 0.65)",
-                      backdropFilter: "blur(8px)",
-                      border: "1px solid rgba(255, 255, 255, 0.15)",
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: cameraActive ? "block" : "none",
+                    }}
+                  />
+
+                  {!cameraActive && (
+                    <div style={{
+                      width: "100%",
+                      height: "100%",
                       display: "flex",
+                      flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: "#F4F5F7",
-                      cursor: "pointer",
-                      zIndex: 10,
-                    }}
-                    title="Flip camera"
-                  >
-                    <SwitchCamera size={18} />
-                  </button>
-                )}
+                      gap: "12px",
+                      padding: "24px",
+                      textAlign: "center",
+                    }}>
+                      <div style={{
+                        width: "64px",
+                        height: "64px",
+                        borderRadius: "16px",
+                        backgroundColor: "#181A20",
+                        border: "1px solid #282C35",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#A0A5B1",
+                      }}>
+                        <Camera size={28} />
+                      </div>
+                      <div>
+                        <p style={{ margin: "0 0 4px 0", fontSize: "14px", fontWeight: "600", color: "#F4F5F7" }}>
+                          Camera Standby
+                        </p>
+                        <p style={{ margin: 0, fontSize: "12px", color: "#747A87" }}>
+                          Use live viewfinder or launch your phone's native camera
+                        </p>
+                      </div>
+                      <button
+                        onClick={startCamera}
+                        className="btn-secondary"
+                        style={{ marginTop: "8px", fontSize: "13px" }}
+                      >
+                        Enable Live Viewfinder
+                      </button>
+                    </div>
+                  )}
 
-                {/* Viewfinder frame guide */}
-                <div style={{
-                  position: "absolute",
-                  inset: "20px",
-                  border: "1px dashed rgba(255, 255, 255, 0.2)",
-                  borderRadius: "14px",
-                  pointerEvents: "none",
-                }} />
+                  {/* Flip camera overlay button */}
+                  {cameraActive && (
+                    <button
+                      onClick={flipCamera}
+                      style={{
+                        position: "absolute",
+                        top: "14px",
+                        right: "14px",
+                        width: "40px",
+                        height: "40px",
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(12, 13, 14, 0.65)",
+                        backdropFilter: "blur(8px)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#F4F5F7",
+                        cursor: "pointer",
+                        zIndex: 10,
+                      }}
+                      title="Flip camera"
+                    >
+                      <SwitchCamera size={18} />
+                    </button>
+                  )}
 
-                <canvas ref={canvasRef} style={{ display: "none" }} />
-              </div>
+                  {/* Viewfinder frame guide */}
+                  <div style={{
+                    position: "absolute",
+                    inset: "20px",
+                    border: "1px dashed rgba(255, 255, 255, 0.2)",
+                    borderRadius: "14px",
+                    pointerEvents: "none",
+                  }} />
+
+                  <canvas ref={canvasRef} style={{ display: "none" }} />
+                </div>
+              )}
 
               {/* Shutter & Actions Bar (Thumb-optimized) */}
               <div style={{
@@ -333,26 +451,45 @@ export default function AddClothing() {
                 border: "1px solid #20232B",
                 borderRadius: "18px",
               }}>
-                {/* Upload from gallery */}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "4px",
-                    background: "transparent",
-                    border: "none",
-                    color: "#A0A5B1",
-                    cursor: "pointer",
-                    padding: "8px 12px",
-                    minWidth: "70px",
-                  }}
-                  id="upload-file-btn"
-                >
-                  <Upload size={20} />
-                  <span style={{ fontSize: "11px", fontWeight: "500" }}>Gallery</span>
-                </button>
+                {captureMode === "gallery" ? (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-primary"
+                    style={{
+                      width: "100%",
+                      minHeight: "46px",
+                      fontSize: "13.5px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <Upload size={17} />
+                    <span>Choose from Photo Gallery</span>
+                  </button>
+                ) : (
+                  <>
+                    {/* Upload from gallery */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "4px",
+                        background: "transparent",
+                        border: "none",
+                        color: "#A0A5B1",
+                        cursor: "pointer",
+                        padding: "8px 12px",
+                        minWidth: "70px",
+                      }}
+                      id="upload-file-btn"
+                    >
+                      <Upload size={20} />
+                      <span style={{ fontSize: "11px", fontWeight: "500" }}>Gallery</span>
+                    </button>
 
                 {/* Main Shutter Button */}
                 {cameraActive ? (
@@ -423,6 +560,9 @@ export default function AddClothing() {
                   <Camera size={20} />
                   <span style={{ fontSize: "11px", fontWeight: "500" }}>Native</span>
                 </button>
+              </>
+            )}
+          </div>
 
                 {/* Hidden native inputs */}
                 <input

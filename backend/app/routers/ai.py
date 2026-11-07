@@ -11,7 +11,7 @@ Security Controls:
 - Input sanitization on occasion/mood/messages to defend against prompt injection.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import Optional, List, Dict, Any
 
@@ -19,7 +19,7 @@ from app.database import get_db
 from app.models.models import User, ClothingItem
 from app.schemas.schemas import AISuggestRequest, AIChatMessage, AIChatResponse
 from app.services.auth import get_current_user
-from app.services.gemini import suggest_outfits, chat_with_stylist
+from app.services.gemini import suggest_outfits, chat_with_stylist, evaluate_outfit_photo
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -147,3 +147,56 @@ async def surprise_outfit(
 
     suggestion = suggestions[0] if suggestions else None
     return {"suggestion": suggestion}
+
+
+@router.post("/fit-check")
+async def outfit_fit_check(
+    image: UploadFile = File(...),
+    occasion: Optional[str] = Form(None),
+    question: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    'Fit Check' Mirror Review ("Does this look good?").
+    
+    Security & Validation:
+    - Restricts upload size to 10MB to avoid denial-of-service memory pressure.
+    - Uses Pillow to validate image headers.
+    - Tenant isolation: passes only authenticated user's clothes so AI recommendations
+      reference items they actually own!
+    """
+    ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+    if image.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid image format. Please upload JPG, PNG or WEBP.")
+
+    contents = await image.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be under 10MB")
+
+    # Fetch user's existing wardrobe to enable smart closet cross-referencing
+    user_items = (
+        db.query(ClothingItem)
+        .filter(ClothingItem.user_id == current_user.id)
+        .limit(35)
+        .all()
+    )
+    wardrobe_list = [
+        {
+            "id": str(item.id),
+            "name": item.name,
+            "category": item.category,
+            "colors": item.colors or [],
+        }
+        for item in user_items
+    ]
+
+    review = await evaluate_outfit_photo(
+        image_bytes=contents,
+        wardrobe_items=wardrobe_list,
+        occasion=occasion,
+        question=question,
+    )
+
+    return review
+

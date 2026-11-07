@@ -59,6 +59,10 @@ export const aiApi = {
   suggest: (data) => api.post("/ai/suggest", data),
   chat: (data) => api.post("/ai/chat", data),
   surprise: () => api.get("/ai/surprise"),
+  fitCheck: (formData) =>
+    api.post("/ai/fit-check", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 };
 
 export default api;
