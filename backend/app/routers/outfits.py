@@ -1,4 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+"""
+Wardrobe AI — Outfits Router
+============================
+Manages curated outfit playlists (collections of clothing items).
+
+Security Architecture:
+- Strict multi-tenant isolation on all endpoints.
+- Ownership verification: When assembling an outfit, every referenced garment
+  must belong to the authenticated user (`ClothingItem.user_id == current_user.id`).
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -15,7 +26,10 @@ async def get_outfits(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get all outfit playlists for the current user."""
+    """
+    Fetch all outfit playlists created by the authenticated user.
+    Ordered by last updated first.
+    """
     outfits = (
         db.query(Outfit)
         .filter(Outfit.user_id == current_user.id)
@@ -25,36 +39,46 @@ async def get_outfits(
     return outfits
 
 
-@router.post("/", response_model=OutfitOut)
+@router.post("/", response_model=OutfitOut, status_code=status.HTTP_201_CREATED)
 async def create_outfit(
     outfit_data: OutfitCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Create a new outfit playlist."""
+    """
+    Create a new outfit playlist.
+
+    Security Controls:
+    - Verifies that every included clothing_item_id is owned by `current_user.id`.
+    - Prevents cross-tenant item referencing.
+    """
+    # 1. Instantiate outfit parent record
     outfit = Outfit(
         user_id=current_user.id,
-        name=outfit_data.name,
-        description=outfit_data.description,
-        occasion=outfit_data.occasion,
-        season=outfit_data.season,
+        name=outfit_data.name.strip()[:100],
+        description=outfit_data.description.strip()[:300] if outfit_data.description else None,
+        occasion=outfit_data.occasion.strip()[:60] if outfit_data.occasion else None,
+        season=outfit_data.season.strip()[:60] if outfit_data.season else None,
     )
     db.add(outfit)
-    db.flush()  # get outfit.id before committing
+    db.flush()
 
-    # Add outfit items
+    # 2. Validate garment ownership before associating
     for item_data in outfit_data.items:
-        # Verify item belongs to user
         clothing_item = db.query(ClothingItem).filter(
-            ClothingItem.id == item_data.clothing_item_id,
+            ClothingItem.id == str(item_data.clothing_item_id),
             ClothingItem.user_id == current_user.id,
         ).first()
+
         if not clothing_item:
-            raise HTTPException(status_code=404, detail=f"Item {item_data.clothing_item_id} not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Garment {item_data.clothing_item_id} not found or unauthorized."
+            )
 
         outfit_item = OutfitItem(
             outfit_id=outfit.id,
-            clothing_item_id=item_data.clothing_item_id,
+            clothing_item_id=str(item_data.clothing_item_id),
             position=item_data.position,
         )
         db.add(outfit_item)
@@ -70,12 +94,17 @@ async def get_outfit(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Fetch a single outfit playlist by ID.
+    Enforces authorization check against current_user.id.
+    """
     outfit = db.query(Outfit).filter(
         Outfit.id == outfit_id,
         Outfit.user_id == current_user.id
     ).first()
+
     if not outfit:
-        raise HTTPException(status_code=404, detail="Outfit not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit playlist not found")
     return outfit
 
 
@@ -86,36 +115,42 @@ async def update_outfit(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Update outfit metadata and/or items list."""
+    """
+    Update outfit metadata or rearrange/replace clothing items.
+    """
     outfit = db.query(Outfit).filter(
         Outfit.id == outfit_id,
         Outfit.user_id == current_user.id
     ).first()
-    if not outfit:
-        raise HTTPException(status_code=404, detail="Outfit not found")
 
-    # Update simple fields
+    if not outfit:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit playlist not found")
+
+    # Update metadata fields
     for field in ["name", "description", "occasion", "season"]:
         value = getattr(updates, field, None)
         if value is not None:
             setattr(outfit, field, value)
 
-    # Replace items if provided
+    # Atomically replace items if updated list provided
     if updates.items is not None:
-        # Delete existing outfit items
         db.query(OutfitItem).filter(OutfitItem.outfit_id == outfit.id).delete()
 
         for item_data in updates.items:
             clothing_item = db.query(ClothingItem).filter(
-                ClothingItem.id == item_data.clothing_item_id,
+                ClothingItem.id == str(item_data.clothing_item_id),
                 ClothingItem.user_id == current_user.id,
             ).first()
+
             if not clothing_item:
-                raise HTTPException(status_code=404, detail=f"Item {item_data.clothing_item_id} not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Garment {item_data.clothing_item_id} not found or unauthorized."
+                )
 
             outfit_item = OutfitItem(
                 outfit_id=outfit.id,
-                clothing_item_id=item_data.clothing_item_id,
+                clothing_item_id=str(item_data.clothing_item_id),
                 position=item_data.position,
             )
             db.add(outfit_item)
@@ -131,13 +166,17 @@ async def delete_outfit(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Permanently delete an outfit playlist.
+    """
     outfit = db.query(Outfit).filter(
         Outfit.id == outfit_id,
         Outfit.user_id == current_user.id
     ).first()
+
     if not outfit:
-        raise HTTPException(status_code=404, detail="Outfit not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Outfit playlist not found")
 
     db.delete(outfit)
     db.commit()
-    return {"message": "Outfit deleted successfully"}
+    return {"message": "Outfit playlist deleted successfully"}

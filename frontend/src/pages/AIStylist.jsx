@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Send, Shuffle, Loader, Save, ChevronDown } from "lucide-react";
+import { Sparkles, Send, Shuffle, Loader, Save, MessageSquare, Lightbulb } from "lucide-react";
 import { aiApi, outfitsApi } from "../api/client";
 import { clothesApi } from "../api/client";
 import { useOutfitStore } from "../store/store";
@@ -25,34 +25,63 @@ function SuggestionCard({ suggestion, items, onSave }) {
   };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="card p-4">
-      <div className="flex items-start justify-between mb-3">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      style={{
+        backgroundColor: "#15161A",
+        border: "1px solid #23262D",
+        borderRadius: "16px",
+        padding: "16px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
         <div>
-          <h3 className="font-semibold">{suggestion.outfit_name}</h3>
-          <span className="badge" style={{ fontSize: "11px", marginTop: "4px", display: "inline-flex" }}>
+          <h3 style={{ margin: "0 0 4px 0", fontSize: "15px", fontWeight: "600", color: "#F4F5F7" }}>
+            {suggestion.outfit_name}
+          </h3>
+          <span className="badge" style={{ fontSize: "11px", textTransform: "capitalize" }}>
             {suggestion.occasion}
           </span>
         </div>
-        <button onClick={handleSave} className="btn-primary" style={{ padding: "8px 14px", fontSize: "13px" }}
-                disabled={saving}>
+        <button
+          onClick={handleSave}
+          className="btn-primary"
+          style={{ minHeight: "36px", padding: "6px 14px", fontSize: "12.5px" }}
+          disabled={saving}
+        >
           {saving ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
           Save
         </button>
       </div>
 
       {/* Item thumbnails */}
-      <div className="flex gap-2 mb-3 overflow-x-auto">
+      <div
+        className="hide-scrollbar"
+        style={{
+          display: "flex",
+          gap: "8px",
+          marginBottom: "12px",
+          overflowX: "auto",
+          paddingBottom: "2px",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
         {outfitItems.map((item) => (
-          <div key={item.id} className="flex-shrink-0 text-center">
-            <img src={item.image_url} alt={item.name}
-                 className="w-20 h-28 object-cover rounded-xl" />
-            <p style={{ fontSize: "10px", color: "#71717A", marginTop: "4px" }}>{item.name}</p>
+          <div key={item.id} style={{ flexShrink: 0, textAlign: "center" }}>
+            <img
+              src={item.image_url}
+              alt={item.name}
+              style={{ width: "72px", height: "96px", objectFit: "cover", borderRadius: "10px", border: "1px solid #23262D" }}
+            />
+            <p style={{ margin: "3px 0 0 0", fontSize: "9.5px", color: "#8E94A0", maxWidth: "72px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {item.name}
+            </p>
           </div>
         ))}
       </div>
 
-      <p style={{ fontSize: "13px", color: "#A1A1AA", fontStyle: "italic" }}>
+      <p style={{ margin: 0, fontSize: "12.5px", color: "#959BA7", lineHeight: 1.45 }}>
         "{suggestion.explanation}"
       </p>
     </motion.div>
@@ -61,21 +90,41 @@ function SuggestionCard({ suggestion, items, onSave }) {
 
 function ChatMessage({ msg }) {
   return (
-    <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} mb-3`}>
+    <div style={{
+      display: "flex",
+      justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+      marginBottom: "12px",
+    }}>
       {msg.role === "assistant" && (
-        <div className="w-7 h-7 rounded-lg mr-2 flex-shrink-0 flex items-center justify-center"
-             style={{ backgroundColor: "#181A20", border: "1px solid #272B35", color: "#F2EEE9" }}>
-          <Sparkles size={12} strokeWidth={1.8} />
+        <div style={{
+          width: "28px",
+          height: "28px",
+          borderRadius: "8px",
+          marginRight: "8px",
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#181A20",
+          border: "1px solid #272B35",
+          color: "#F2EEE9",
+        }}>
+          <Sparkles size={13} strokeWidth={1.8} />
         </div>
       )}
-      <div className={`max-w-xs rounded-xl px-4 py-2.5 text-sm ${
-        msg.role === "user"
-          ? "rounded-br-xs"
-          : "rounded-bl-xs"
-      }`}
-           style={msg.role === "user"
-             ? { backgroundColor: "#F2EEE9", color: "#0C0D0E", fontWeight: "500" }
-             : { backgroundColor: "#15161A", color: "#F4F5F7", border: "1px solid #23262D" }}>
+      <div style={{
+        maxWidth: "82%",
+        borderRadius: "14px",
+        padding: "10px 14px",
+        fontSize: "13.5px",
+        lineHeight: 1.45,
+        backgroundColor: msg.role === "user" ? "#F2EEE9" : "#15161A",
+        color: msg.role === "user" ? "#0C0D0E" : "#F4F5F7",
+        fontWeight: msg.role === "user" ? "500" : "400",
+        border: msg.role === "user" ? "1px solid #F2EEE9" : "1px solid #23262D",
+        borderBottomRightRadius: msg.role === "user" ? "4px" : "14px",
+        borderBottomLeftRadius: msg.role === "assistant" ? "4px" : "14px",
+      }}>
         {msg.content}
       </div>
     </div>
@@ -90,7 +139,10 @@ export default function AIStylist() {
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatMessages, setChatMessages] = useState([
-    { role: "assistant", content: "Hey! I'm StyleAI 👋 Tell me about an upcoming event or ask for fashion advice, and I'll help you style an outfit from your wardrobe!" }
+    {
+      role: "assistant",
+      content: "Hello! I'm your AI Stylist. Tell me what event or vibe you're dressing for, and I'll assemble cohesive outfits directly from your wardrobe!"
+    }
   ]);
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -102,7 +154,7 @@ export default function AIStylist() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  }, [chatMessages, isChatLoading]);
 
   const handleGetSuggestions = async () => {
     setIsLoading(true);
@@ -111,10 +163,10 @@ export default function AIStylist() {
       const res = await aiApi.suggest({ occasion: selectedOccasion || null });
       setSuggestions(res.data.suggestions || []);
       if (!res.data.suggestions?.length) {
-        toast("Add more clothes to get outfit suggestions!", { icon: "💡" });
+        toast("Add more clothes to generate outfit synergies!", { icon: "💡" });
       }
     } catch {
-      toast.error("AI is busy — try again in a moment!");
+      toast.error("AI is busy right now. Please retry in a moment!");
     } finally {
       setIsLoading(false);
     }
@@ -126,9 +178,9 @@ export default function AIStylist() {
     try {
       const res = await aiApi.surprise();
       if (res.data.suggestion) setSuggestions([res.data.suggestion]);
-      else toast("Add more items to get a surprise!", { icon: "🎲" });
+      else toast("Add more clothes for surprise combos!", { icon: "🎲" });
     } catch {
-      toast.error("AI couldn't surprise you this time!");
+      toast.error("Could not generate surprise outfit!");
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +208,7 @@ export default function AIStylist() {
     } catch {
       setChatMessages((prev) => [...prev, {
         role: "assistant",
-        content: "Sorry, I'm having connection issues. Please try again! 🙏"
+        content: "Sorry, I had trouble generating a reply. Please try again! 🙏"
       }]);
     } finally {
       setIsChatLoading(false);
@@ -164,92 +216,176 @@ export default function AIStylist() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#0C0D0E", color: "#F4F5F7" }}>
-      {/* Header */}
-      <div className="sticky top-0 z-20 px-6 py-4"
-           style={{ background: "#0C0D0E", borderBottom: "1px solid #1F2128" }}>
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                 style={{ backgroundColor: "#181A20", border: "1px solid #272B35", color: "#F2EEE9" }}>
-              <Sparkles size={18} strokeWidth={1.8} />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold" style={{ letterSpacing: "-0.02em" }}>AI Stylist</h1>
-              <p style={{ color: "#747A87", fontSize: "12px" }}>Gemini Intelligence Studio</p>
-            </div>
-          </div>
+    <div style={{ minHeight: "100dvh", backgroundColor: "#0C0D0E", color: "#F4F5F7" }}>
+      {/* Top Header & Tabs (Sticky) */}
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        padding: "14px 16px 10px 16px",
+        backgroundColor: "#0C0D0E",
+        borderBottom: "1px solid #1E2027",
+      }}>
+        <div style={{ maxWidth: "680px", margin: "0 auto" }}>
+          {/* Segmented Switcher Tab */}
+          <div style={{
+            display: "flex",
+            gap: "4px",
+            padding: "4px",
+            borderRadius: "12px",
+            backgroundColor: "#141518",
+            border: "1px solid #20232B",
+          }}>
+            <button
+              onClick={() => setActiveTab("suggest")}
+              style={{
+                flex: 1,
+                minHeight: "38px",
+                borderRadius: "8px",
+                border: activeTab === "suggest" ? "1px solid #2F333E" : "1px solid transparent",
+                backgroundColor: activeTab === "suggest" ? "#1F222A" : "transparent",
+                color: activeTab === "suggest" ? "#F4F5F7" : "#747A87",
+                fontSize: "12.5px",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                cursor: "pointer",
+                transition: "all 0.12s ease",
+              }}
+            >
+              <Lightbulb size={14} /> Suggestions
+            </button>
 
-          {/* Tabs */}
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: "#141518", border: "1px solid #1F2128" }}>
-            {["suggest", "chat"].map((tab) => {
-              const isActive = activeTab === tab;
-              return (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                        className="flex-1 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all duration-150"
-                        style={isActive
-                          ? { background: "#1F222A", color: "#F4F5F7", border: "1px solid #2F333E" }
-                          : { color: "#747A87", border: "1px solid transparent" }}>
-                  {tab === "suggest" ? "Outfit Suggestions" : "Stylist Consultation"}
-                </button>
-              );
-            })}
+            <button
+              onClick={() => setActiveTab("chat")}
+              style={{
+                flex: 1,
+                minHeight: "38px",
+                borderRadius: "8px",
+                border: activeTab === "chat" ? "1px solid #2F333E" : "1px solid transparent",
+                backgroundColor: activeTab === "chat" ? "#1F222A" : "transparent",
+                color: activeTab === "chat" ? "#F4F5F7" : "#747A87",
+                fontSize: "12.5px",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                cursor: "pointer",
+                transition: "all 0.12s ease",
+              }}
+            >
+              <MessageSquare size={14} /> Style Chat
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="px-6 py-6 max-w-2xl mx-auto">
+      {/* Main Body */}
+      <div style={{ padding: "16px", maxWidth: "680px", margin: "0 auto" }}>
         <AnimatePresence mode="wait">
-          {/* SUGGESTIONS TAB */}
+          {/* ─── SUGGESTIONS TAB ──────────────────────────────────────────── */}
           {activeTab === "suggest" && (
-            <motion.div key="suggest" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* Controls */}
-              <div className="card p-5 mb-6">
-                <p className="text-xs uppercase tracking-wider mb-3 font-semibold" style={{ color: "#747A87" }}>Select Occasion</p>
-                <div className="flex flex-wrap gap-2 mb-5">
+            <motion.div
+              key="suggest"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            >
+              {/* Occasion Filter & Trigger Box */}
+              <div style={{
+                backgroundColor: "#15161A",
+                border: "1px solid #23262D",
+                borderRadius: "16px",
+                padding: "16px",
+              }}>
+                <label style={{ display: "block", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", color: "#747A87", fontWeight: "600", marginBottom: "8px" }}>
+                  Occasion Vibe
+                </label>
+
+                {/* Chips Carousel */}
+                <div
+                  className="hide-scrollbar"
+                  style={{
+                    display: "flex",
+                    gap: "6px",
+                    overflowX: "auto",
+                    paddingBottom: "10px",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
                   {OCCASIONS.map((o) => {
                     const isSelected = selectedOccasion === o;
                     return (
-                      <button key={o} onClick={() => setSelectedOccasion(o === selectedOccasion ? "" : o)}
-                              style={{
-                                cursor: "pointer",
-                                fontSize: "12px",
-                                padding: "5px 12px",
-                                borderRadius: "6px",
-                                border: isSelected ? "1px solid #F2EEE9" : "1px solid #23262D",
-                                backgroundColor: isSelected ? "#F2EEE9" : "#141518",
-                                color: isSelected ? "#0C0D0E" : "#898F9C",
-                                fontWeight: isSelected ? "600" : "500",
-                              }}>
+                      <button
+                        key={o}
+                        onClick={() => setSelectedOccasion(isSelected ? "" : o)}
+                        style={{
+                          whiteSpace: "nowrap",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          padding: "6px 13px",
+                          borderRadius: "8px",
+                          border: isSelected ? "1px solid #F2EEE9" : "1px solid #23262D",
+                          backgroundColor: isSelected ? "#F2EEE9" : "#121316",
+                          color: isSelected ? "#0C0D0E" : "#8E94A0",
+                          fontWeight: isSelected ? "600" : "500",
+                          textTransform: "capitalize",
+                          transition: "all 0.12s ease",
+                        }}
+                      >
                         {o}
                       </button>
                     );
                   })}
                 </div>
-                <div className="flex gap-3">
-                  <button className="btn-primary flex-1 justify-center" onClick={handleGetSuggestions}
-                          disabled={isLoading} id="get-suggestions-btn">
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
+                  <button
+                    className="btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={handleGetSuggestions}
+                    disabled={isLoading}
+                    id="get-suggestions-btn"
+                  >
                     {isLoading ? <Loader size={15} className="animate-spin" /> : <Sparkles size={15} />}
-                    Generate Suggestions
+                    Generate Outfit
                   </button>
-                  <button className="btn-secondary justify-center" onClick={handleSurprise}
-                          disabled={isLoading} style={{ padding: "11px 16px" }} title="Surprise Me!" id="surprise-btn">
-                    <Shuffle size={15} />
+                  <button
+                    className="btn-secondary"
+                    onClick={handleSurprise}
+                    disabled={isLoading}
+                    title="Surprise Me"
+                    style={{ minWidth: "48px", padding: "10px" }}
+                    id="surprise-btn"
+                  >
+                    <Shuffle size={16} />
                   </button>
                 </div>
               </div>
 
-              {/* Suggestions */}
-              <div className="space-y-4">
+              {/* Suggestions List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                 {isLoading && (
-                  <div className="text-center py-12">
-                    <div className="inline-flex items-center gap-3 px-5 py-3 rounded-xl"
-                         style={{ background: "#15161A", border: "1px solid #23262D" }}>
-                      <Loader size={16} style={{ color: "#F2EEE9" }} className="animate-spin" />
-                      <span style={{ color: "#8E94A0", fontSize: "13px" }}>Analyzing wardrobe synergies...</span>
+                  <div style={{ textAlign: "center", padding: "32px 16px" }}>
+                    <div style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      padding: "12px 18px",
+                      borderRadius: "12px",
+                      backgroundColor: "#15161A",
+                      border: "1px solid #23262D",
+                    }}>
+                      <Loader size={16} className="animate-spin" color="#F2EEE9" />
+                      <span style={{ fontSize: "13px", color: "#8E94A0" }}>Styling best combinations...</span>
                     </div>
                   </div>
                 )}
+
                 <AnimatePresence>
                   {suggestions.map((s, i) => (
                     <SuggestionCard key={i} suggestion={s} items={wardrobeItems} onSave={handleSaveOutfit} />
@@ -259,44 +395,77 @@ export default function AIStylist() {
             </motion.div>
           )}
 
-          {/* CHAT TAB */}
+          {/* ─── CHAT TAB ─────────────────────────────────────────────────── */}
           {activeTab === "chat" && (
-            <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="flex flex-col" style={{ height: "calc(100vh - 200px)" }}>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto mb-4 pr-1">
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "calc(100dvh - 180px)",
+              }}
+            >
+              {/* Messages area */}
+              <div style={{ flex: 1, overflowY: "auto", paddingRight: "4px", paddingBottom: "12px" }}>
                 {chatMessages.map((msg, i) => (
                   <ChatMessage key={i} msg={msg} />
                 ))}
+
                 {isChatLoading && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                         style={{ backgroundColor: "#181A20", border: "1px solid #272B35", color: "#F2EEE9" }}>
-                      <Sparkles size={12} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                    <div style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "8px",
+                      backgroundColor: "#181A20",
+                      border: "1px solid #272B35",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#F2EEE9",
+                    }}>
+                      <Sparkles size={13} />
                     </div>
-                    <div className="px-4 py-2.5 rounded-xl rounded-bl-xs"
-                         style={{ background: "#15161A", border: "1px solid #23262D" }}>
-                      <div className="flex gap-1.5 items-center">
-                        {[0, 1, 2].map((i) => (
-                          <div key={i} className="w-1.5 h-1.5 rounded-full"
-                               style={{ background: "#8E94A0", animation: "pulse 1.2s infinite ease-in-out", animationDelay: `${i * 0.2}s` }} />
-                        ))}
-                      </div>
+                    <div style={{
+                      padding: "10px 14px",
+                      borderRadius: "14px",
+                      backgroundColor: "#15161A",
+                      border: "1px solid #23262D",
+                    }}>
+                      <Loader size={14} className="animate-spin" color="#8E94A0" />
                     </div>
                   </div>
                 )}
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Input */}
-              <div className="flex gap-3">
-                <input className="input flex-1" placeholder="Ask your stylist anything..."
-                       value={chatInput} onChange={(e) => setChatInput(e.target.value)}
-                       onKeyDown={(e) => e.key === "Enter" && handleChatSend()}
-                       id="chat-input" />
-                <button className="btn-primary" style={{ padding: "12px 16px" }}
-                        onClick={handleChatSend} disabled={isChatLoading || !chatInput.trim()}
-                        id="chat-send-btn">
+              {/* Chat Input Docked */}
+              <div style={{
+                display: "flex",
+                gap: "8px",
+                paddingTop: "8px",
+                borderTop: "1px solid #1E2027",
+                backgroundColor: "#0C0D0E",
+              }}>
+                <input
+                  className="input"
+                  style={{ flex: 1, minHeight: "44px" }}
+                  placeholder="Ask for fashion advice, event pairing..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleChatSend()}
+                  id="chat-input"
+                />
+                <button
+                  className="btn-primary"
+                  style={{ width: "48px", minHeight: "44px", padding: 0 }}
+                  onClick={handleChatSend}
+                  disabled={isChatLoading || !chatInput.trim()}
+                  id="chat-send-btn"
+                >
                   <Send size={16} />
                 </button>
               </div>

@@ -9,31 +9,22 @@ export default function Login() {
 
   return (
     <div style={{
-      minHeight: "100vh",
+      minHeight: "100dvh",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: "#0C0D0E",
       color: "#F4F5F7",
-      padding: "24px",
+      padding: "16px",
       position: "relative",
     }}>
-      {/* Subtle architectural hairline border grid / frame */}
-      <div style={{
-        position: "absolute",
-        inset: "20px",
-        border: "1px solid rgba(255, 255, 255, 0.04)",
-        pointerEvents: "none",
-        borderRadius: "16px",
-      }} />
-
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
         style={{
           width: "100%",
-          maxWidth: "440px",
+          maxWidth: "420px",
           position: "relative",
           zIndex: 1,
         }}
@@ -42,55 +33,55 @@ export default function Login() {
         <div style={{
           backgroundColor: "#15161A",
           border: "1px solid #23262D",
-          borderRadius: "16px",
-          padding: "40px 32px",
+          borderRadius: "20px",
+          padding: "32px 22px",
           boxShadow: "0 24px 48px -12px rgba(0, 0, 0, 0.45)",
         }}>
           {/* Header & Emblem */}
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <div style={{ textAlign: "center", marginBottom: "26px" }}>
             <div style={{
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              width: "56px",
-              height: "56px",
+              width: "52px",
+              height: "52px",
               borderRadius: "14px",
               backgroundColor: "#1C1E23",
               border: "1px solid #2A2E37",
-              marginBottom: "20px",
+              marginBottom: "16px",
               color: "#F2EEE9",
             }}>
-              <Shirt size={26} strokeWidth={1.8} />
+              <Shirt size={24} strokeWidth={1.8} />
             </div>
 
             <div style={{
-              fontSize: "11px",
+              fontSize: "10.5px",
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               color: "#8E94A0",
               fontWeight: 600,
-              marginBottom: "8px",
+              marginBottom: "6px",
             }}>
               Personal Wardrobe Intelligence
             </div>
 
             <h1 style={{
-              fontSize: "30px",
-              fontWeight: "600",
+              fontSize: "26px",
+              fontWeight: "700",
               letterSpacing: "-0.03em",
               color: "#F4F5F7",
-              margin: "0 0 8px 0",
+              margin: "0 0 6px 0",
             }}>
               Wardrobe AI
             </h1>
 
             <p style={{
-              fontSize: "14px",
+              fontSize: "13.5px",
               color: "#8E94A0",
               margin: 0,
-              lineHeight: 1.5,
+              lineHeight: 1.45,
             }}>
-              Catalog your garments, orchestrate outfit combos, and style with precision.
+              Digitize garments using your phone camera, curate playlists & style with AI.
             </p>
           </div>
 
@@ -98,8 +89,8 @@ export default function Login() {
           <div style={{
             display: "grid",
             gridTemplateColumns: "1fr",
-            gap: "10px",
-            marginBottom: "32px",
+            gap: "8px",
+            marginBottom: "26px",
           }}>
             {[
               {
@@ -123,16 +114,16 @@ export default function Login() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "14px",
-                  padding: "12px 14px",
-                  borderRadius: "10px",
+                  gap: "12px",
+                  padding: "10px 12px",
+                  borderRadius: "12px",
                   backgroundColor: "#111215",
                   border: "1px solid #1F2128",
                 }}
               >
                 <div style={{
-                  width: "36px",
-                  height: "36px",
+                  width: "34px",
+                  height: "34px",
                   borderRadius: "8px",
                   backgroundColor: "#181A1F",
                   border: "1px solid #252831",
@@ -142,13 +133,13 @@ export default function Login() {
                   color: "#D0D4DC",
                   flexShrink: 0,
                 }}>
-                  <Icon size={17} strokeWidth={1.75} />
+                  <Icon size={16} strokeWidth={1.8} />
                 </div>
                 <div style={{ minWidth: 0, textAlign: "left" }}>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#E4E7ED" }}>
+                  <div style={{ fontSize: "12.5px", fontWeight: "600", color: "#E4E7ED" }}>
                     {title}
                   </div>
-                  <div style={{ fontSize: "11.5px", color: "#747A87", lineHeight: 1.3 }}>
+                  <div style={{ fontSize: "11px", color: "#747A87", lineHeight: 1.3 }}>
                     {desc}
                   </div>
                 </div>
@@ -160,17 +151,17 @@ export default function Login() {
           <div>
             <motion.button
               onClick={handleGoogleLogin}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
+              whileTap={{ scale: 0.98 }}
               id="google-login-btn"
               style={{
                 width: "100%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "12px",
-                padding: "13px 20px",
-                borderRadius: "10px",
+                gap: "10px",
+                minHeight: "46px",
+                padding: "12px 18px",
+                borderRadius: "12px",
                 fontWeight: "600",
                 fontSize: "14px",
                 cursor: "pointer",
@@ -188,34 +179,25 @@ export default function Login() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
               <span>Continue with Google</span>
-              <ArrowRight size={15} style={{ marginLeft: "4px", color: "#555A64" }} />
+              <ArrowRight size={15} style={{ marginLeft: "2px", color: "#555A64" }} />
             </motion.button>
 
-            {/* Dev Mode Quick Access */}
+            {/* Quick Demo Preview Button */}
             <button
               onClick={() => { window.location.href = "http://localhost:8000/auth/dev-login"; }}
               style={{
                 width: "100%",
                 marginTop: "10px",
-                padding: "10px",
-                borderRadius: "8px",
-                fontSize: "12.5px",
+                minHeight: "42px",
+                padding: "8px",
+                borderRadius: "10px",
+                fontSize: "12px",
                 fontWeight: "500",
                 color: "#838996",
                 backgroundColor: "transparent",
                 border: "1px dashed #282C35",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#F4F5F7";
-                e.currentTarget.style.borderColor = "#444A56";
-                e.currentTarget.style.backgroundColor = "#181A20";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#838996";
-                e.currentTarget.style.borderColor = "#282C35";
-                e.currentTarget.style.backgroundColor = "transparent";
               }}
               id="dev-demo-btn"
             >
@@ -228,11 +210,11 @@ export default function Login() {
             alignItems: "center",
             justifyContent: "center",
             gap: "6px",
-            marginTop: "18px",
-            fontSize: "12px",
+            marginTop: "16px",
+            fontSize: "11.5px",
             color: "#646A77",
           }}>
-            <ShieldCheck size={14} color="#7E8592" />
+            <ShieldCheck size={13} color="#7E8592" />
             <span>Private & secure session authentication</span>
           </div>
         </div>
