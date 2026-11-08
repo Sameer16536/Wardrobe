@@ -40,6 +40,7 @@ async def get_wardrobe(
     category: Optional[str] = None,
     season: Optional[str] = None,
     occasion: Optional[str] = None,
+    tag: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -48,7 +49,7 @@ async def get_wardrobe(
     
     Security:
     - Strictly scoped to `ClothingItem.user_id == current_user.id`.
-    - Supports optional filtering by category, season, and occasion.
+    - Supports optional filtering by category, season, occasion, and tag.
     """
     query = db.query(ClothingItem).filter(ClothingItem.user_id == current_user.id)
 
@@ -57,11 +58,13 @@ async def get_wardrobe(
 
     items = query.order_by(ClothingItem.created_at.desc()).all()
 
-    # Optional in-memory filter for JSON list attributes (seasons, occasions)
+    # Optional in-memory filter for JSON list attributes (seasons, occasions, tags)
     if season:
         items = [i for i in items if season.lower() in [s.lower() for s in (i.seasons or [])]]
     if occasion:
         items = [i for i in items if occasion.lower() in [o.lower() for o in (i.occasions or [])]]
+    if tag:
+        items = [i for i in items if tag.lower() in [t.lower() for t in (i.tags or [])]]
 
     return items
 
@@ -259,6 +262,8 @@ async def retag_item_with_ai(
         image_bytes = resp.content
 
     ai_tags = await analyze_clothing_image(image_bytes)
+    if not item.name or item.name in ("Garment Item", "Clothing Item", "Garment"):
+        item.name = ai_tags.get("name", item.name)
     item.category = ai_tags.get("category", item.category)
     item.colors = ai_tags.get("colors", item.colors)
     item.seasons = ai_tags.get("seasons", item.seasons)

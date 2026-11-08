@@ -36,10 +36,12 @@ settings = get_settings()
 # Configure Google Gemini client with configured API key
 if settings.GEMINI_API_KEY:
     genai.configure(api_key=settings.GEMINI_API_KEY)
+    import os
+    os.environ["GOOGLE_API_KEY"] = settings.GEMINI_API_KEY
 
 # Use latest Gemini Flash model for speed, generous free limits, vision & structured output
-PRIMARY_MODEL_NAME = "gemini-flash-latest"
-FALLBACK_MODEL_NAME = "gemini-3.8-flash"
+PRIMARY_MODEL_NAME = "gemini-3.1-flash-lite"
+FALLBACK_MODEL_NAME = "gemini-flash-latest"
 
 def _get_generative_model(name: str = PRIMARY_MODEL_NAME):
     """Instantiate Gemini model."""
@@ -96,15 +98,16 @@ async def analyze_clothing_image(image_bytes: bytes) -> Dict[str, Any]:
         return parsed
 
     except Exception as e:
-        # Graceful fallback if Gemini API is temporarily unavailable or unconfigured
+        print(f"[Gemini Vision Error] analyze_clothing_image failed: {e}")
+        # Safe fallback if Gemini API is temporarily unreachable
         return {
           "name": "Garment Item",
           "category": "other",
-          "colors": ["black"],
-          "seasons": ["summer", "winter", "spring", "autumn"],
-          "occasions": ["casual"],
-          "tags": ["versatile"],
-          "confidence": 0.5,
+          "colors": [],
+          "seasons": [],
+          "occasions": [],
+          "tags": [],
+          "confidence": 0.0,
         }
 
 

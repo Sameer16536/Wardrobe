@@ -61,6 +61,7 @@ async def get_outfit_suggestions(
             "colors": item.colors or [],
             "occasions": item.occasions or [],
             "seasons": item.seasons or [],
+            "tags": item.tags or [],
         }
         for item in items
     ]
@@ -101,6 +102,7 @@ async def stylist_chat(
             "category": item.category,
             "colors": item.colors or [],
             "occasions": item.occasions or [],
+            "tags": item.tags or [],
         }
         for item in items
     ]
@@ -135,6 +137,7 @@ async def surprise_outfit(
             "colors": item.colors or [],
             "occasions": item.occasions or [],
             "seasons": item.seasons or [],
+            "tags": item.tags or [],
         }
         for item in items
     ]

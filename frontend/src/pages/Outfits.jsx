@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, X, Trash2, Save, GripVertical, Check, Sparkles } from "lucide-react";
+import { Plus, X, Trash2, Save, GripVertical, Check, Sparkles, Search } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
@@ -118,6 +118,16 @@ function OutfitCard({ outfit, onDelete }) {
   );
 }
 
+const BUILDER_CATEGORIES = [
+  { label: "All", value: "all" },
+  { label: "Tops", filter: (cat) => ["shirt", "t-shirt", "sweater", "hoodie"].includes(cat) },
+  { label: "Bottoms", filter: (cat) => ["pants", "jeans", "shorts", "skirt"].includes(cat) },
+  { label: "Outerwear", filter: (cat) => ["jacket", "coat"].includes(cat) },
+  { label: "Dresses", filter: (cat) => cat === "dress" },
+  { label: "Shoes", filter: (cat) => ["shoes", "sneakers", "boots", "heels", "sandals"].includes(cat) },
+  { label: "Accessories", filter: (cat) => ["bag", "hat", "scarf", "belt", "accessory", "other"].includes(cat) },
+];
+
 export default function Outfits() {
   const navigate = useNavigate();
   const { outfits, builderItems, setOutfits, addOutfit, removeOutfit, addToBuilder,
@@ -126,6 +136,8 @@ export default function Outfits() {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [outfitName, setOutfitName] = useState("");
   const [outfitOccasion, setOutfitOccasion] = useState("");
+  const [builderSearch, setBuilderSearch] = useState("");
+  const [builderCategory, setBuilderCategory] = useState("all");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -394,71 +406,162 @@ export default function Outfits() {
 
                 {/* Wardrobe Selector */}
                 <div>
-                  <label style={{ display: "block", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", color: "#747A87", fontWeight: "600", marginBottom: "8px" }}>
-                    Tap to Add / Remove
-                  </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                    {wardrobeItems.map((item) => {
-                      const isSelected = builderItems.some((i) => i.id === item.id);
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <label style={{ display: "block", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", color: "#747A87", fontWeight: "600", margin: 0 }}>
+                      Select Clothes ({filteredWardrobe.length})
+                    </label>
+                    <span style={{ fontSize: "11px", color: "#6A707E" }}>
+                      Tap to add / remove
+                    </span>
+                  </div>
+
+                  {/* Search in Builder */}
+                  <div style={{ position: "relative", marginBottom: "8px" }}>
+                    <Search size={14} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#5E6472" }} />
+                    <input
+                      className="input"
+                      placeholder="Search clothes or #tags..."
+                      value={builderSearch}
+                      onChange={(e) => setBuilderSearch(e.target.value)}
+                      style={{ paddingLeft: "32px", minHeight: "36px", fontSize: "12px", paddingRight: builderSearch ? "30px" : "10px" }}
+                    />
+                    {builderSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setBuilderSearch("")}
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          background: "transparent",
+                          border: "none",
+                          color: "#7E8592",
+                          cursor: "pointer",
+                          padding: 0,
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Category Chips in Builder */}
+                  <div
+                    className="hide-scrollbar"
+                    style={{
+                      display: "flex",
+                      gap: "5px",
+                      overflowX: "auto",
+                      paddingBottom: "8px",
+                      WebkitOverflowScrolling: "touch",
+                    }}
+                  >
+                    {BUILDER_CATEGORIES.map((c) => {
+                      const isSelected = builderCategory.toLowerCase() === c.label.toLowerCase();
                       return (
                         <button
-                          key={item.id}
-                          onClick={() => isSelected ? removeFromBuilder(item.id) : addToBuilder(item)}
+                          key={c.label}
+                          type="button"
+                          onClick={() => setBuilderCategory(c.label)}
                           style={{
-                            position: "relative",
-                            aspectRatio: "3/4",
-                            borderRadius: "12px",
-                            overflow: "hidden",
-                            border: isSelected ? "2px solid #F2EEE9" : "1px solid #23262D",
-                            padding: 0,
-                            backgroundColor: "#15161A",
+                            whiteSpace: "nowrap",
                             cursor: "pointer",
+                            fontSize: "11px",
+                            padding: "4px 10px",
+                            borderRadius: "6px",
+                            border: isSelected ? "1px solid #F2EEE9" : "1px solid #23262D",
+                            backgroundColor: isSelected ? "#F2EEE9" : "#16171B",
+                            color: isSelected ? "#0C0D0E" : "#8E94A0",
+                            fontWeight: isSelected ? "600" : "500",
+                            transition: "all 0.12s ease",
                           }}
                         >
-                          <img src={item.image_url} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          {isSelected && (
-                            <div style={{
-                              position: "absolute",
-                              inset: 0,
-                              backgroundColor: "rgba(12, 13, 14, 0.65)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}>
-                              <div style={{
-                                width: "24px",
-                                height: "24px",
-                                borderRadius: "50%",
-                                backgroundColor: "#F2EEE9",
-                                color: "#0C0D0E",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}>
-                                <Check size={14} strokeWidth={2.5} />
-                              </div>
-                            </div>
-                          )}
-                          <p style={{
-                            position: "absolute",
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            margin: 0,
-                            padding: "4px",
-                            fontSize: "10px",
-                            backgroundColor: "rgba(12, 13, 14, 0.8)",
-                            color: "#E2E5EB",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}>
-                            {item.name}
-                          </p>
+                          {c.label}
                         </button>
                       );
                     })}
                   </div>
+
+                  {filteredWardrobe.length === 0 ? (
+                    <div style={{
+                      textAlign: "center",
+                      padding: "24px 12px",
+                      color: "#6A707E",
+                      fontSize: "12.5px",
+                      backgroundColor: "#141518",
+                      borderRadius: "12px",
+                      border: "1px dashed #242730",
+                    }}>
+                      No garments match the current filter.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                      {filteredWardrobe.map((item) => {
+                        const isSelected = builderItems.some((i) => i.id === item.id);
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => isSelected ? removeFromBuilder(item.id) : addToBuilder(item)}
+                            style={{
+                              position: "relative",
+                              aspectRatio: "3/4",
+                              borderRadius: "12px",
+                              overflow: "hidden",
+                              border: isSelected ? "2px solid #F2EEE9" : "1px solid #23262D",
+                              padding: 0,
+                              backgroundColor: "#15161A",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <img src={item.image_url} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            {isSelected && (
+                              <div style={{
+                                position: "absolute",
+                                inset: 0,
+                                backgroundColor: "rgba(12, 13, 14, 0.65)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}>
+                                <div style={{
+                                  width: "24px",
+                                  height: "24px",
+                                  borderRadius: "50%",
+                                  backgroundColor: "#F2EEE9",
+                                  color: "#0C0D0E",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}>
+                                  <Check size={14} strokeWidth={2.5} />
+                                </div>
+                              </div>
+                            )}
+                            <p style={{
+                              position: "absolute",
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              margin: 0,
+                              padding: "4px",
+                              fontSize: "10px",
+                              backgroundColor: "rgba(12, 13, 14, 0.8)",
+                              color: "#E2E5EB",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}>
+                              {item.name}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 

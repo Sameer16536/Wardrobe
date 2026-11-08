@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Search, RefreshCw, Trash2, Camera, X, Tag, Upload } from "lucide-react";
 import { clothesApi } from "../api/client";
@@ -18,8 +18,10 @@ const COLOR_MAP = {
   teal: "#0d9488", maroon: "#7f1d1d",
 };
 
-function GarmentDetailModal({ item, onClose, onDelete, onRetag }) {
+function GarmentDetailModal({ item, onClose, onDelete, onRetag, onUpdateItem, onSelectTag }) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [newTagInput, setNewTagInput] = useState("");
+  const [isAddingTag, setIsAddingTag] = useState(false);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -31,6 +33,43 @@ function GarmentDetailModal({ item, onClose, onDelete, onRetag }) {
     } catch {
       toast.error("Failed to delete garment");
       setIsDeleting(false);
+    }
+  };
+
+  const handleAddTag = async () => {
+    const clean = newTagInput.trim().toLowerCase().replace(/^#/, "");
+    if (!clean) return;
+    const currentTags = item.tags || [];
+    if (currentTags.map((t) => t.toLowerCase()).includes(clean)) {
+      toast("Tag already exists", { icon: "ℹ️" });
+      setNewTagInput("");
+      return;
+    }
+
+    setIsAddingTag(true);
+    const updatedTags = [...currentTags, clean];
+    try {
+      await clothesApi.update(item.id, { tags: updatedTags });
+      onUpdateItem(item.id, { tags: updatedTags });
+      item.tags = updatedTags; // local sync
+      toast.success(`Added #${clean}`);
+      setNewTagInput("");
+    } catch {
+      toast.error("Failed to add tag");
+    } finally {
+      setIsAddingTag(false);
+    }
+  };
+
+  const handleRemoveTag = async (tagToRemove) => {
+    const updatedTags = (item.tags || []).filter((t) => t !== tagToRemove);
+    try {
+      await clothesApi.update(item.id, { tags: updatedTags });
+      onUpdateItem(item.id, { tags: updatedTags });
+      item.tags = updatedTags; // local sync
+      toast.success(`Removed #${tagToRemove}`);
+    } catch {
+      toast.error("Failed to remove tag");
     }
   };
 
@@ -109,13 +148,112 @@ function GarmentDetailModal({ item, onClose, onDelete, onRetag }) {
         </div>
 
         {/* Occasions & Seasons tags */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "16px" }}>
           {(item.occasions || []).map((o) => (
             <span key={o} className="tag" style={{ fontSize: "11.5px", textTransform: "capitalize" }}>{o}</span>
           ))}
           {(item.seasons || []).map((s) => (
             <span key={s} className="tag" style={{ fontSize: "11.5px", textTransform: "capitalize" }}>{s}</span>
           ))}
+        </div>
+
+        {/* Custom Tags Section */}
+        <div style={{
+          backgroundColor: "#16171B",
+          border: "1px solid #252832",
+          borderRadius: "14px",
+          padding: "12px 14px",
+          marginBottom: "16px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+            <span style={{ fontSize: "12px", fontWeight: "600", color: "#C8CBD0", display: "flex", alignItems: "center", gap: "5px" }}>
+              <Tag size={13} /> Tags (Click to filter)
+            </span>
+            <span style={{ fontSize: "11px", color: "#6A707E" }}>
+              {(item.tags || []).length} tags
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+            {(item.tags && item.tags.length > 0) ? (
+              item.tags.map((t) => (
+                <span
+                  key={t}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    padding: "3px 8px",
+                    borderRadius: "6px",
+                    backgroundColor: "#1F222A",
+                    border: "1px solid #313642",
+                    color: "#F2EEE9",
+                    fontSize: "11.5px",
+                  }}
+                >
+                  <button
+                    onClick={() => {
+                      onSelectTag(t);
+                      onClose();
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "inherit",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontWeight: "500",
+                    }}
+                    title="Filter wardrobe by this tag"
+                  >
+                    #{t}
+                  </button>
+                  <button
+                    onClick={() => handleRemoveTag(t)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "#7E8492",
+                      cursor: "pointer",
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Remove tag"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))
+            ) : (
+              <span style={{ fontSize: "12px", color: "#6A707E" }}>No custom tags yet.</span>
+            )}
+          </div>
+
+          {/* Add tag row */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            <input
+              className="input"
+              placeholder="Add tag (e.g. vintage, cotton)..."
+              value={newTagInput}
+              onChange={(e) => setNewTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddTag();
+                }
+              }}
+              style={{ minHeight: "36px", fontSize: "12.5px", padding: "6px 12px" }}
+            />
+            <button
+              onClick={handleAddTag}
+              disabled={isAddingTag || !newTagInput.trim()}
+              className="btn-secondary"
+              style={{ minHeight: "36px", padding: "0 14px", fontSize: "12.5px", flexShrink: 0 }}
+            >
+              Add
+            </button>
+          </div>
         </div>
 
         {item.notes && (
@@ -164,6 +302,9 @@ function GarmentDetailModal({ item, onClose, onDelete, onRetag }) {
 }
 
 function ClothingCard({ item, onClick }) {
+  const displayTags = (item.tags || []).slice(0, 2);
+  const remainingTagsCount = (item.tags || []).length - displayTags.length;
+
   return (
     <motion.div
       layout
@@ -218,8 +359,34 @@ function ClothingCard({ item, onClick }) {
           {item.name}
         </p>
         <p style={{ margin: "2px 0 0 0", color: "#747A87", fontSize: "11px", textTransform: "capitalize" }}>
-          {item.category}
+          {item.category} {item.brand && `• ${item.brand}`}
         </p>
+
+        {/* Tag pills on garment card */}
+        {displayTags.length > 0 && (
+          <div style={{ display: "flex", gap: "4px", marginTop: "6px", flexWrap: "wrap", alignItems: "center" }}>
+            {displayTags.map((t) => (
+              <span
+                key={t}
+                style={{
+                  fontSize: "10px",
+                  padding: "1px 5px",
+                  borderRadius: "4px",
+                  backgroundColor: "#1E2027",
+                  color: "#9EA4B0",
+                  border: "1px solid #282C35",
+                }}
+              >
+                #{t}
+              </span>
+            ))}
+            {remainingTagsCount > 0 && (
+              <span style={{ fontSize: "10px", color: "#6A707E" }}>
+                +{remainingTagsCount}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -227,9 +394,10 @@ function ClothingCard({ item, onClick }) {
 
 export default function Wardrobe() {
   const navigate = useNavigate();
-  const { items, isLoading, setItems, setLoading, removeItem } = useWardrobeStore();
+  const { items, isLoading, setItems, setLoading, removeItem, updateItem } = useWardrobeStore();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeTag, setActiveTag] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
@@ -247,6 +415,21 @@ export default function Wardrobe() {
     loadItems();
   }, []);
 
+  // Collect all unique custom/AI tags across user's wardrobe items
+  const availableTags = useMemo(() => {
+    const set = new Set();
+    items.forEach((item) => {
+      if (Array.isArray(item.tags)) {
+        item.tags.forEach((t) => {
+          if (t && typeof t === "string" && t.trim()) {
+            set.add(t.trim().toLowerCase());
+          }
+        });
+      }
+    });
+    return Array.from(set).sort();
+  }, [items]);
+
   const handleRetag = async (id) => {
     toast.loading("Analyzing garment with AI...", { id: "retag" });
     try {
@@ -259,10 +442,25 @@ export default function Wardrobe() {
     }
   };
 
+  // Comprehensive multi-attribute filtering (name, tags, category, color, brand, season, occasion)
+  const query = search.trim().toLowerCase().replace(/^#/, "");
+
   const filtered = items.filter((item) => {
-    const matchesSearch = !search || item.name.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !query || Boolean(
+      item.name?.toLowerCase().includes(query) ||
+      item.brand?.toLowerCase().includes(query) ||
+      item.category?.toLowerCase().includes(query) ||
+      item.notes?.toLowerCase().includes(query) ||
+      (item.tags || []).some((t) => t.toLowerCase().includes(query)) ||
+      (item.colors || []).some((c) => c.toLowerCase().includes(query)) ||
+      (item.seasons || []).some((s) => s.toLowerCase().includes(query)) ||
+      (item.occasions || []).some((o) => o.toLowerCase().includes(query))
+    );
+
     const matchesCategory = activeCategory === "all" || item.category === activeCategory;
-    return matchesSearch && matchesCategory;
+    const matchesTag = !activeTag || (item.tags || []).some((t) => t.toLowerCase() === activeTag.toLowerCase());
+
+    return matchesSearch && matchesCategory && matchesTag;
   });
 
   return (
@@ -302,11 +500,31 @@ export default function Wardrobe() {
             <Search size={15} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#5E6472" }} />
             <input
               className="input"
-              style={{ paddingLeft: "36px", minHeight: "40px", fontSize: "13px" }}
-              placeholder="Search category, color, brand..."
+              style={{ paddingLeft: "36px", paddingRight: search ? "36px" : "15px", minHeight: "40px", fontSize: "13px" }}
+              placeholder="Search by name, #tag, category, color, brand..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "transparent",
+                  border: "none",
+                  color: "#747A87",
+                  cursor: "pointer",
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
 
           {/* Category Chips Carousel */}
@@ -316,7 +534,7 @@ export default function Wardrobe() {
               display: "flex",
               gap: "6px",
               overflowX: "auto",
-              paddingBottom: "2px",
+              paddingBottom: availableTags.length > 0 ? "8px" : "2px",
               WebkitOverflowScrolling: "touch",
             }}
           >
@@ -345,6 +563,89 @@ export default function Wardrobe() {
               );
             })}
           </div>
+
+          {/* Tag Filter Chips Bar */}
+          {availableTags.length > 0 && (
+            <div
+              className="hide-scrollbar"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+                overflowX: "auto",
+                paddingTop: "2px",
+                paddingBottom: "2px",
+                WebkitOverflowScrolling: "touch",
+              }}
+            >
+              <span style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                color: "#6E7482",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                flexShrink: 0,
+                marginRight: "2px",
+              }}>
+                <Tag size={12} /> Tags:
+              </span>
+
+              {activeTag && (
+                <button
+                  onClick={() => setActiveTag(null)}
+                  style={{
+                    cursor: "pointer",
+                    fontSize: "11px",
+                    padding: "3px 8px",
+                    borderRadius: "6px",
+                    border: "1px solid #4D2626",
+                    backgroundColor: "#2B1616",
+                    color: "#F87171",
+                    fontWeight: "600",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "3px",
+                    flexShrink: 0,
+                  }}
+                >
+                  Clear Tag <X size={11} />
+                </button>
+              )}
+
+              {availableTags.map((tag) => {
+                const isSelected = activeTag?.toLowerCase() === tag.toLowerCase();
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => setActiveTag(isSelected ? null : tag)}
+                    style={{
+                      cursor: "pointer",
+                      fontSize: "11px",
+                      padding: "3px 9px",
+                      borderRadius: "6px",
+                      border: isSelected ? "1px solid #F2EEE9" : "1px solid #242732",
+                      backgroundColor: isSelected ? "#F2EEE9" : "#141518",
+                      color: isSelected ? "#0C0D0E" : "#9AA0AD",
+                      fontWeight: isSelected ? "600" : "500",
+                      whiteSpace: "nowrap",
+                      transition: "all 0.12s ease",
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "3px",
+                    }}
+                  >
+                    #{tag}
+                    {isSelected && <X size={11} />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -399,18 +700,34 @@ export default function Wardrobe() {
             </h2>
             <p style={{ color: "#747A87", fontSize: "13px", margin: "0 0 18px 0" }}>
               {items.length === 0
-                ? "Snap clothes with your phone camera to build your digital closet."
-                : "Try resetting your search or category filter."}
+                ? "Snap clothes with your camera or upload photos to build your digital wardrobe."
+                : (activeTag || search || activeCategory !== "all")
+                ? "Try resetting your search query, category, or tag filter."
+                : "No garments found."}
             </p>
-            {items.length === 0 && (
+            {items.length === 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "240px", margin: "0 auto" }}>
                 <button className="btn-primary" onClick={() => navigate("/add")} style={{ width: "100%" }}>
                   <Camera size={16} /> Snap First Garment
                 </button>
                 <button className="btn-secondary" onClick={() => navigate("/add")} style={{ width: "100%" }}>
-                  <Upload size={16} /> Upload from Gallery
+                  <Upload size={16} /> Upload Photo
                 </button>
               </div>
+            ) : (
+              (activeTag || search || activeCategory !== "all") && (
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    setSearch("");
+                    setActiveCategory("all");
+                    setActiveTag(null);
+                  }}
+                  style={{ fontSize: "12.5px", padding: "6px 16px" }}
+                >
+                  Reset All Filters
+                </button>
+              )
             )}
           </motion.div>
         ) : (
@@ -457,7 +774,7 @@ export default function Wardrobe() {
           cursor: "pointer",
         }}
         className="flex sm:hidden"
-        title="Snap Clothes"
+        title="Add Garment"
       >
         <Camera size={22} strokeWidth={2.2} />
       </button>
@@ -470,6 +787,14 @@ export default function Wardrobe() {
             onClose={() => setSelectedItem(null)}
             onDelete={removeItem}
             onRetag={handleRetag}
+            onUpdateItem={(id, updates) => {
+              updateItem(id, updates);
+              setSelectedItem((prev) => (prev ? { ...prev, ...updates } : null));
+            }}
+            onSelectTag={(t) => {
+              setActiveTag(t);
+              setSearch("");
+            }}
           />
         )}
       </AnimatePresence>

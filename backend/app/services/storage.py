@@ -48,12 +48,57 @@ def compress_image(image_bytes: bytes, max_size_kb: int = 350, max_dim: int = 12
     return buffer.read()
 
 
+def process_garment_image(image_bytes: bytes, auto_remove_bg: bool = True) -> bytes:
+    """
+    Pre-processes uploaded garment photo like Atricent & Acloset:
+    - Removes messy backgrounds (bedsheets, floors, walls) using rembg AI.
+    - Composites the clean garment onto a neutral studio background (#F8F9FA).
+    - Auto-crops to garment silhouette with balanced padding.
+    - Compresses cleanly for fast loading.
+    """
+    processed = image_bytes
+    if auto_remove_bg:
+        try:
+            import rembg
+            cutout_bytes = rembg.remove(image_bytes)
+            cutout_img = Image.open(io.BytesIO(cutout_bytes)).convert("RGBA")
+
+            # Clean studio off-white backdrop
+            studio_bg = Image.new("RGBA", cutout_img.size, (248, 249, 250, 255))
+            composite = Image.alpha_composite(studio_bg, cutout_img).convert("RGB")
+
+            # Crop to isolated garment bounding box + 8% padding
+            bbox = cutout_img.getbbox()
+            if bbox:
+                w, h = composite.size
+                left, upper, right, lower = bbox
+                pad_x = int((right - left) * 0.08)
+                pad_y = int((lower - upper) * 0.08)
+                crop_box = (
+                    max(0, left - pad_x),
+                    max(0, upper - pad_y),
+                    min(w, right + pad_x),
+                    min(h, lower + pad_y),
+                )
+                composite = composite.crop(crop_box)
+
+            buf = io.BytesIO()
+            composite.save(buf, format="JPEG", quality=90, optimize=True)
+            processed = buf.getvalue()
+        except Exception as e:
+            # Safe fallback: if rembg model is offline or downloading, keep original image
+            print("Auto background removal notice:", e)
+            processed = image_bytes
+
+    return compress_image(processed)
+
+
 async def upload_image(image_bytes: bytes, filename: str, user_id: str) -> str:
     """
-    Compress and upload image to Supabase Storage via S3 API,
+    Process, compress and upload image to Supabase Storage via S3 API,
     or save locally if S3 credentials are not configured.
     """
-    compressed = compress_image(image_bytes)
+    compressed = process_garment_image(image_bytes)
     s3 = get_s3_client()
 
     if s3 is None:

@@ -1,5 +1,10 @@
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE_PATH = str(BACKEND_DIR / ".env")
 
 
 class Settings(BaseSettings):
@@ -37,7 +42,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     class Config:
-        env_file = ".env"
+        env_file = (ENV_FILE_PATH, ".env")
         extra = "ignore"
 
 
