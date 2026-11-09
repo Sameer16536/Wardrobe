@@ -4,11 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import Base, engine
 from app.routers import auth, clothes, outfits, ai
+from app.security_middleware import SecurityAndRateLimitMiddleware
 
 settings = get_settings()
 
 # Create all tables (use Alembic migrations in production)
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print("Database init notice (will retry on query):", e)
 
 app = FastAPI(
     title="Wardrobe AI API",
@@ -17,6 +21,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# ─── Security & Rate Limiting ──────────────────────────────────────────────────
+app.add_middleware(SecurityAndRateLimitMiddleware)
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(

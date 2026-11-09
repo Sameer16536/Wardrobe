@@ -56,7 +56,6 @@ function SortableItem({ item, onRemove }) {
 function OutfitCard({ outfit, onDelete }) {
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
@@ -107,6 +106,8 @@ function OutfitCard({ outfit, onDelete }) {
             key={oi.clothing_item_id}
             src={oi.clothing_item?.image_url}
             alt={oi.clothing_item?.name}
+            loading="lazy"
+            decoding="async"
             style={{ width: "70px", height: "92px", objectFit: "cover", borderRadius: "10px", border: "1px solid #23262D", flexShrink: 0 }}
           />
         ))}
@@ -139,26 +140,40 @@ export default function Outfits() {
   const [builderSearch, setBuilderSearch] = useState("");
   const [builderCategory, setBuilderCategory] = useState("all");
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(outfits.length === 0);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   useEffect(() => {
+    let isMounted = true;
     const load = async () => {
+      // Stale-while-revalidate: only show skeleton if zero outfits exist in memory
+      if (outfits.length === 0) {
+        setIsLoading(true);
+      }
       try {
         const [outfitsRes, wardrobeRes] = await Promise.all([
           outfitsApi.getAll(),
           clothesApi.getAll(),
         ]);
-        setOutfits(outfitsRes.data);
-        setWardrobeItems(wardrobeRes.data);
+        if (isMounted) {
+          setOutfits(outfitsRes.data);
+          setWardrobeItems(wardrobeRes.data);
+        }
       } catch {
-        toast.error("Failed to load data");
+        if (isMounted && outfits.length === 0) {
+          toast.error("Failed to load data");
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
     load();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleDragEnd = (event) => {

@@ -307,7 +307,6 @@ function ClothingCard({ item, onClick }) {
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
@@ -328,6 +327,7 @@ function ClothingCard({ item, onClick }) {
           src={item.image_url}
           alt={item.name}
           loading="lazy"
+          decoding="async"
           style={{
             width: "100%",
             height: "100%",
@@ -401,18 +401,31 @@ export default function Wardrobe() {
   const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadItems = async () => {
-      setLoading(true);
+      // Stale-while-revalidate: only show skeleton if we have 0 items cached in memory
+      if (items.length === 0) {
+        setLoading(true);
+      }
       try {
         const res = await clothesApi.getAll();
-        setItems(res.data);
+        if (isMounted) {
+          setItems(res.data);
+        }
       } catch {
-        toast.error("Failed to load wardrobe");
+        if (isMounted && items.length === 0) {
+          toast.error("Failed to load wardrobe");
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     loadItems();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Collect all unique custom/AI tags across user's wardrobe items

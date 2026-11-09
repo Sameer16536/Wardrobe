@@ -81,15 +81,18 @@ export default function AddClothing() {
     loadDevices();
   }, []);
 
-  // Stop camera when unmounting or switching to upload mode
+  // Stop camera and release image object URLs on unmount to prevent mobile memory leaks
   useEffect(() => {
     if (captureMode === "upload") {
       stopCamera();
     }
     return () => {
       stopCamera();
+      if (capturedImage) {
+        URL.revokeObjectURL(capturedImage);
+      }
     };
-  }, [captureMode]);
+  }, [captureMode, capturedImage]);
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -264,6 +267,7 @@ export default function AddClothing() {
     canvas.toBlob((blob) => {
       if (!blob) return;
       const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+      if (capturedImage) URL.revokeObjectURL(capturedImage);
       const url = URL.createObjectURL(blob);
       setCapturedImage(url);
       setImageFile(file);
@@ -275,6 +279,7 @@ export default function AddClothing() {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (capturedImage) URL.revokeObjectURL(capturedImage);
     const url = URL.createObjectURL(file);
     setCapturedImage(url);
     setImageFile(file);

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { aiApi, outfitsApi } from "../api/client";
 import { clothesApi } from "../api/client";
-import { useOutfitStore } from "../store/store";
+import { useOutfitStore, useWardrobeStore } from "../store/store";
 import toast from "react-hot-toast";
 
 const OCCASIONS = ["casual", "formal", "party", "gym", "work", "outdoor", "date night"];
@@ -148,7 +148,7 @@ function ChatMessage({ msg }) {
 
 export default function AIStylist() {
   const { addOutfit } = useOutfitStore();
-  const [wardrobeItems, setWardrobeItems] = useState([]);
+  const { items: wardrobeItems, setItems: setWardrobeItems } = useWardrobeStore();
   const [activeTab, setActiveTab] = useState("suggest"); // suggest | fitcheck | chat
   const [selectedOccasion, setSelectedOccasion] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -164,6 +164,13 @@ export default function AIStylist() {
   const fitFileInputRef = useRef(null);
   const fitCameraInputRef = useRef(null);
 
+  // Clean up Object URLs to prevent memory leaks on phone & PC
+  useEffect(() => {
+    return () => {
+      if (fitPreview) URL.revokeObjectURL(fitPreview);
+    };
+  }, [fitPreview]);
+
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -175,7 +182,9 @@ export default function AIStylist() {
   const chatEndRef = useRef(null);
 
   useEffect(() => {
-    clothesApi.getAll().then((res) => setWardrobeItems(res.data)).catch(() => {});
+    if (wardrobeItems.length === 0) {
+      clothesApi.getAll().then((res) => setWardrobeItems(res.data)).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -224,6 +233,7 @@ export default function AIStylist() {
   const handleFitPhotoSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (fitPreview) URL.revokeObjectURL(fitPreview);
     setFitFile(file);
     setFitPreview(URL.createObjectURL(file));
     setFitResult(null);
